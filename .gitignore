@@ -1,0 +1,16 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.idea/
+*.iml
+*.log
+*.sqlite
+*.db
+*.csv
+*.xlsx
