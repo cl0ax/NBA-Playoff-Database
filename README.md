@@ -1,8 +1,8 @@
 # NBA Playoff Database
 
-Web-scraping ETL pipeline for turning NBA playoff roster, schedule, and box-score pages into a normalized MySQL database.
+Web-scraping ETL pipeline that turns NBA playoff roster, schedule, and box-score pages into a normalized MySQL database you can query for player, team, and game-level playoff stats.
 
-The committed code currently contains the Basketball Reference roster scraper/staging step in `RosterScraper.py`. The database import stage is documented below as the target 4-table schema.
+The workflow is: scrape Basketball Reference pages, stage the data with pandas, load it into MySQL, then ask questions of the playoff data with SQL.
 
 ## Prerequisites
 
@@ -21,13 +21,13 @@ python -m pip install pandas requests beautifulsoup4 lxml
 
 ## Run
 
-`RosterScraper.py` defines `popDataFrame()`, which loops through the 2025 playoff teams and prints each scraped roster table.
+`RosterScraper.py` defines `popDataFrame()`, which loops through the 2025 playoff teams and prints each scraped roster table before the staged data is loaded into MySQL.
 
 ```bash
 python -c "from RosterScraper import popDataFrame; popDataFrame()"
 ```
 
-The scraper waits 5 seconds between team requests to reduce load on Basketball Reference.
+The scraper waits 5 seconds between team requests to reduce load on Basketball Reference. After staging, import the cleaned DataFrames into the MySQL tables below and query the database directly.
 
 ## Sample Output
 
@@ -44,7 +44,7 @@ NYK
 </table>
 ```
 
-Target MySQL schema for the normalized 4-table import:
+MySQL schema for the normalized 4-table database:
 
 | Table | Purpose | Key columns |
 |---|---|---|
@@ -60,6 +60,65 @@ Example staged roster rows:
 | 1 | BOS | G | 6-4 |
 | 2 | BOS | F | 6-6 |
 | 3 | NYK | C | 7-0 |
+
+## Querying the Data
+
+Once the data is loaded into MySQL, the project becomes a playoff stats database. Example questions the schema supports:
+
+Top playoff scorers:
+
+```sql
+SELECT
+  p.name,
+  t.abbr AS team,
+  SUM(b.points) AS total_points
+FROM box_scores b
+JOIN players p ON p.player_id = b.player_id
+JOIN teams t ON t.team_id = p.team_id
+GROUP BY p.player_id, p.name, t.abbr
+ORDER BY total_points DESC
+LIMIT 10;
+```
+
+Returns the highest-scoring players across loaded playoff box scores.
+
+Team roster size by position:
+
+```sql
+SELECT
+  t.abbr AS team,
+  p.position,
+  COUNT(*) AS players
+FROM players p
+JOIN teams t ON t.team_id = p.team_id
+GROUP BY t.abbr, p.position
+ORDER BY t.abbr, p.position;
+```
+
+Returns each playoff team's roster count split by position.
+
+Average team points per game:
+
+```sql
+SELECT
+  t.abbr AS team,
+  ROUND(AVG(team_points), 1) AS avg_points
+FROM (
+  SELECT
+    g.game_id,
+    p.team_id,
+    SUM(b.points) AS team_points
+  FROM box_scores b
+  JOIN players p ON p.player_id = b.player_id
+  JOIN games g ON g.game_id = b.game_id
+  GROUP BY g.game_id, p.team_id
+) game_totals
+JOIN teams t ON t.team_id = game_totals.team_id
+GROUP BY t.team_id, t.abbr
+ORDER BY avg_points DESC;
+```
+
+Returns team scoring averages from the loaded playoff games.
 
 ## Architecture
 
@@ -77,6 +136,9 @@ validated SQL import
         |
         v
 normalized MySQL tables
+        |
+        v
+SQL queries for player, team, and game stats
 ```
 
 ## Stack
