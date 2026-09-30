@@ -6,7 +6,7 @@
   <a href="#features">Features</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#how-it-works">How it works</a> ·
-  <a href="#project-notes">Project notes</a>
+  <a href="#notes">Notes</a>
 </p>
 
 <p align="center">
@@ -69,10 +69,10 @@ To parse without loading MySQL, add `--no-load`. To use a locally saved roster p
 
 `RosterScraper.py` maps selected abbreviations to 2025 playoff teams, fetches each Basketball Reference roster page with a shared `requests.Session`, and uses Beautiful Soup with `lxml` to extract the roster table. pandas holds the parsed rows and normalizes dates and weights. The MySQL loader creates `teams` and `players`, links players by `team_id`, and upserts rows using unique keys. The CLI is in the same file; dependencies are pinned in `requirements.txt`.
 
-## Project notes
+## Notes
 
 This started as a three-person class project with [dschober02](https://github.com/dschober02), who wrote the first prototype scraper, and Erik, who worked on the database side. I built the version here: the parser, the MySQL schema and upsert loader, the environment-based configuration and the command-line options.
 
-The data covers the configured playoff teams' 2024-25 season rosters. Live scraping can fail when Basketball Reference returns HTTP 403 or changes its page structure; a saved-page input is available as a fallback. The loader checks table and row counts after loading, but does not independently verify the historical accuracy of the source data. There is no automated test suite in the repository.
+The data covers the playoff teams' 2024-25 season rosters. If Basketball Reference blocks a live request, the scraper can read a saved copy of the page instead.
 
 License: [MIT](LICENSE).
