@@ -71,7 +71,7 @@ To parse without loading MySQL, add `--no-load`. To use a locally saved roster p
 
 ## Project notes
 
-This started as a three-person class project with [dschober02](https://github.com/dschober02), who wrote the first prototype scraper, and Erik, who worked on the database side. I rewrote it into what is here now: the parser, the MySQL schema and upsert loader, the environment-based configuration and the command-line options.
+This started as a three-person class project with [dschober02](https://github.com/dschober02), who wrote the first prototype scraper, and Erik, who worked on the database side. I built the version here: the parser, the MySQL schema and upsert loader, the environment-based configuration and the command-line options.
 
 The data covers the configured playoff teams' 2024-25 season rosters. Live scraping can fail when Basketball Reference returns HTTP 403 or changes its page structure; a saved-page input is available as a fallback. The loader checks table and row counts after loading, but does not independently verify the historical accuracy of the source data. There is no automated test suite in the repository.
 
