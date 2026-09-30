@@ -1,101 +1,78 @@
-# NBA Playoff Roster Database
+<h1 align="center">NBA Playoff Roster Database</h1>
 
-This project parses 2024-25 Basketball Reference roster pages with Beautiful Soup and pandas, then loads the 2025 playoff teams and their players into a normalized MySQL database.
+<p align="center">Scrape the 2024-25 rosters of the NBA playoff teams and load them into a queryable MySQL schema.</p>
 
-The implemented scope is roster data only. It does not scrape schedules, games, box scores, or player playoff statistics.
+<p align="center">
+  <a href="#features">Features</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#how-it-works">How it works</a> ·
+  <a href="#project-notes">Project notes</a>
+</p>
 
-## Data model
+<p align="center">
+  <img src="https://img.shields.io/badge/language-Python-blue" alt="Python">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT license">
+</p>
 
-The loader creates two tables:
+<p align="center">
+  <img src="docs/demo.gif" width="720" alt="The source Basketball Reference roster page for Boston, then a live run parsing Boston and New York, loading 39 players into MySQL, and a query joining players to their teams">
+</p>
 
-- `teams`: one row per team and season.
-- `players`: roster details linked to `teams` by a foreign key.
+This Python command-line tool parses team roster tables from Basketball Reference and loads player and team rows into MySQL. I built it to make the 2024-25 rosters of the playoff teams easy to inspect and query with SQL. It takes each team's full season roster table, not only the players who appeared in the playoffs. Its scope is roster data only; it does not collect schedules, games, box scores, or playoff statistics.
 
-Player rows include the Basketball Reference identifier, jersey number, name, position, height, weight, birth date, nationality, experience, and college. Unique constraints make repeated loads update existing roster rows instead of duplicating them.
+## Features
 
-## Requirements
+- **Roster extraction.** Select configured 2025 playoff teams, fetch their roster pages, and parse player identifiers, names, jersey numbers, positions, measurements, birth dates, nationality, experience, and college.
+- **Normalized MySQL schema.** Store team-season records separately from players, linked by a foreign key.
+- **Repeat-safe loading.** Unique keys and `ON DUPLICATE KEY UPDATE` statements update matching team and player rows instead of inserting duplicates.
+- **Flexible inputs.** Choose teams, control the request delay, load a saved HTML page, or print parsed rows without writing to MySQL.
+- **SQL-ready output.** The demo loads BOS and NYK, then queries roster counts and player positions from the local database.
 
-- Python 3.10 or newer
-- MySQL 8 or newer
-- Network access to Basketball Reference for live requests
+## Quick start
 
-Install the Python dependencies:
+Prerequisites: Python 3.10 or newer, MySQL 8 or newer, and network access to Basketball Reference for live scraping.
 
 ```bash
+git clone https://github.com/cl0ax/NBA-Playoff-Database.git
+cd NBA-Playoff-Database
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-## Database configuration
-
-Set credentials through environment variables. Do not commit them.
+Set database connection values in your shell. The MySQL user needs permission to create the selected database and its tables.
 
 ```bash
 export NBA_DB_HOST=127.0.0.1
 export NBA_DB_PORT=3306
 export NBA_DB_USER=your_user
 export NBA_DB_PASSWORD=your_password
-export NBA_DB_NAME=nba_playoff_rosters
 ```
 
-The configured MySQL user must be allowed to create the selected database and its tables.
-
-## Run
-
-Load every configured 2025 playoff roster:
+Load the Boston and New York rosters into a database named `nba_demo`:
 
 ```bash
-python RosterScraper.py
+python RosterScraper.py --teams BOS,NYK --database nba_demo
 ```
 
-Load selected teams:
+That command completed successfully in the demo run shown above. The script creates the database if needed. The database argument overrides `NBA_DB_NAME`, which otherwise defaults to `nba_playoff_rosters`.
+
+Query the loaded rows:
 
 ```bash
-python RosterScraper.py --teams BOS,NYK
+mysql -h "$NBA_DB_HOST" -P "$NBA_DB_PORT" -u "$NBA_DB_USER" -p nba_demo -e "SELECT 'teams' t, COUNT(*) n FROM teams UNION ALL SELECT 'players', COUNT(*) FROM players; SELECT t.abbr, p.name, p.position FROM players p JOIN teams t USING (team_id) LIMIT 6;"
 ```
 
-The live scraper waits 5 seconds between requests by default. Basketball Reference can return HTTP 403 to automated clients. If that happens, save a roster page through a browser and parse that real page without changing the ETL path:
+To parse without loading MySQL, add `--no-load`. To use a locally saved roster page when a live request is blocked, pass one team and `--html-file /path/to/TEAM-2025.html`.
 
-```bash
-python RosterScraper.py --teams BOS --html-file /path/to/BOS-2025.html
-```
+## How it works
 
-Use `--no-load` to inspect the pandas rows without writing to MySQL.
+`RosterScraper.py` maps selected abbreviations to 2025 playoff teams, fetches each Basketball Reference roster page with a shared `requests.Session`, and uses Beautiful Soup with `lxml` to extract the roster table. pandas holds the parsed rows and normalizes dates and weights. The MySQL loader creates `teams` and `players`, links players by `team_id`, and upserts rows using unique keys. The CLI is in the same file; dependencies are pinned in `requirements.txt`.
 
-## Example queries
+## Project notes
 
-Roster size by team:
+This started as a two-person project. My teammate wrote the first prototype scraper; I rewrote it into what is here now: the parser, the MySQL schema and upsert loader, the environment-based configuration and the command-line options.
 
-```sql
-SELECT t.abbr, COUNT(*) AS roster_size
-FROM teams t
-JOIN players p ON p.team_id = t.team_id
-GROUP BY t.team_id, t.abbr
-ORDER BY t.abbr;
-```
+The data covers the configured playoff teams' 2024-25 season rosters. Live scraping can fail when Basketball Reference returns HTTP 403 or changes its page structure; a saved-page input is available as a fallback. The loader checks table and row counts after loading, but does not independently verify the historical accuracy of the source data. There is no automated test suite in the repository.
 
-Players by position:
-
-```sql
-SELECT t.abbr, p.position, COUNT(*) AS players
-FROM teams t
-JOIN players p ON p.team_id = t.team_id
-GROUP BY t.abbr, p.position
-ORDER BY t.abbr, p.position;
-```
-
-## Stack
-
-- Python
-- requests
-- Beautiful Soup with lxml
-- pandas
-- mysql-connector-python
-- MySQL
-
-## Limitations
-
-- The project covers rosters only.
-- Live scraping depends on Basketball Reference allowing the request.
-- The loader verifies table and row counts, not the historical accuracy of source data.
+License: [MIT](LICENSE).
