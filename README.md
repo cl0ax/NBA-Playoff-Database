@@ -22,11 +22,35 @@ This Python command-line tool parses team roster tables from Basketball Referenc
 
 ## Features
 
-- **Roster extraction.** Select configured 2025 playoff teams, fetch their roster pages, and parse player identifiers, names, jersey numbers, positions, measurements, birth dates, nationality, experience, and college.
-- **Normalized MySQL schema.** Store team-season records separately from players, linked by a foreign key.
-- **Repeat-safe loading.** Unique keys and `ON DUPLICATE KEY UPDATE` statements update matching team and player rows instead of inserting duplicates.
-- **Flexible inputs.** Choose teams, control the request delay, load a saved HTML page, or print parsed rows without writing to MySQL.
-- **SQL-ready output.** The demo loads BOS and NYK, then queries roster counts and player positions from the local database.
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <b>Roster extraction</b><br>
+      Select configured 2025 playoff teams, fetch their roster pages, and parse player identifiers, names, jersey numbers, positions, measurements, birth dates, nationality, experience, and college.
+    </td>
+    <td width="50%" valign="top">
+      <b>Normalized MySQL schema</b><br>
+      Store team-season records separately from players, linked by a foreign key.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <b>Repeat-safe loading</b><br>
+      Unique keys and <code>ON DUPLICATE KEY UPDATE</code> statements update matching team and player rows instead of inserting duplicates.
+    </td>
+    <td width="50%" valign="top">
+      <b>Flexible inputs</b><br>
+      Choose teams, control the request delay, load a saved HTML page, or print parsed rows without writing to MySQL.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <b>SQL-ready output</b><br>
+      The demo loads BOS and NYK, then queries roster counts and player positions from the local database.
+    </td>
+    <td width="50%"></td>
+  </tr>
+</table>
 
 ## Quick start
 
